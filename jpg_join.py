@@ -59,7 +59,7 @@ img_size = img1.size
 print(f'old size: {img_size}')
 
 # set how much to trim from images
-TOP_BOTTOM_RATIO = 2.1
+TOP_BOTTOM_RATIO = args.tb_ratio
 
 LEFT = args.h_trim
 UPPER = args.v_trim
