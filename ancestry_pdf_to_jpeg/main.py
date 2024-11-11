@@ -67,7 +67,11 @@ def main():
 
     # convert PDF to individual JPEGs
     print("Converting from PDF to JPEG...")
-    pdf_pages = convert_from_path(args.file, dpi=200)
+    try:
+        pdf_pages = convert_from_path(args.file, dpi=200)
+    except Exception as e:
+        print(f"Error converting PDF: {e}")
+        sys.exit(1)
     if len(pdf_pages) != (ROWS * COLS):
         raise ValueError(
             f'The number of images converted ({len(pdf_pages)}) does not match the requested number ({ROWS*COLS}). \n \
