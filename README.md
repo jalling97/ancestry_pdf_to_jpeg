@@ -29,11 +29,21 @@ optional arguments:
 
 ## Example
 
+### Create a virtual environment
+```bash
+python -m venv .venv
+source ./venv/bin/activate
+```
+
 ### Install requirements
-`pip install -r requirements.txt`
+```bash
+pip install "."
+```
 
 ### Run the program
-`python3 jpg_join.py -f ancestry_pdf.pdf`
+```bash
+python -m ancestry_pdf_to_jpeg.main -f ancestry_pdf.pdf
+```
 
 Minor adjustments can be made using the arguments listed under Usage.
 
