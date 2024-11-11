@@ -11,11 +11,22 @@ Description: A quick utility for taking PDF trees from Ancestry.com and combinin
 import argparse
 import os
 import sys
+import tempfile
+from contextlib import contextmanager
 from pdf2image import convert_from_path
 from PIL import Image
 
-def main():
+@contextmanager
+def managed_image(path):
+    "Handle a temporary image."
+    img = Image.open(path)
+    try:
+        yield img
+    finally:
+        img.close()
 
+def main():
+    "Primary logic for converting/joining the image."
     # argument parsing
     parser = argparse.ArgumentParser(
         prog="ancestry_pdf_to_jpeg",
@@ -77,70 +88,60 @@ def main():
             f'The number of images converted ({len(pdf_pages)}) does not match the requested number ({ROWS*COLS}). \n \
                 Please adjust the number of rows and columns using the "--rows" and "--cols" arguments'
         )
+    print("PDF conversion complete!")
 
-    # store individual JPEGs
-    print("Saving JPEGs")
-    for count, page in enumerate(pdf_pages):
-        sys.stdout.write(f"Progress: {count+1}/{len(pdf_pages)} \r")
-        page.save(f"{count+1}.jpg", "JPEG")
-        sys.stdout.flush()
-    print("Saving complete!")
+    with tempfile.TemporaryDirectory() as temp_dir:      
+        # temporarily store individual JPEGs
+        imgs = []
+        for count, page in enumerate(pdf_pages):
+            temp_path = os.path.join(temp_dir, f"{count+1}.jpg")
+            page.save(temp_path, "JPEG")
+            imgs.append(temp_path)
 
-    # create list of individual JPEGs
-    imgs = [f"{x}.jpg" for x in range(1, len(pdf_pages) + 1)]
-    img1 = Image.open("1.jpg")
-    img_size = img1.size
-    print(f"old size: {img_size}")
+        with managed_image(imgs[0]) as img1:
+            img_size = img1.size
+            print(f"old size: {img_size}")
 
-    # set how much to trim from images
-    TOP_BOTTOM_RATIO = args.tb_ratio
+            # set how much to trim from images
+            TOP_BOTTOM_RATIO = args.tb_ratio
 
-    LEFT = args.h_trim
-    UPPER = args.v_trim
-    LOWER = img_size[0] - args.h_trim
-    RIGHT = int(img_size[1] - TOP_BOTTOM_RATIO * (args.v_trim))
+            LEFT = args.h_trim
+            UPPER = args.v_trim
+            LOWER = img_size[0] - args.h_trim
+            RIGHT = int(img_size[1] - TOP_BOTTOM_RATIO * (args.v_trim))
 
-    # create empty image to hold final image data
-    img1 = img1.crop((LEFT, UPPER, LOWER, RIGHT))
-    img_size = img1.size  # get the new size
-    print(f"new size: {img_size}")
-    img1.close()
-    final_image = Image.new(
-        "RGB", (COLS * img_size[0], ROWS * img_size[1]), (255, 255, 255)
-    )
-    print(f"final image size: {final_image.size}")
+            # create empty image to hold final image data
+            img1 = img1.crop((LEFT, UPPER, LOWER, RIGHT))
+            img_size = img1.size  # get the new size
+            print(f"new size: {img_size}")
+            img1.close()
 
-    # paste individual JPEGs to final image
-    print("Stitching images together...")
-    for ii in range(ROWS):
-        for jj in range(COLS):
-            img_num = (
-                jj + (ii * COLS) + 1
-            )  # get the image number to be read from this folder (non-zero index)
-            sys.stdout.write(f"Progress: {img_num}/{len(pdf_pages)} \r")
-            curr_image = Image.open(f"{img_num}.jpg")
-            curr_image = curr_image.crop((LEFT, UPPER, LOWER, RIGHT))
-            final_image.paste(curr_image, (jj * img_size[0], ii * img_size[1]))
-            curr_image.close()
-            sys.stdout.flush()
+        final_image = Image.new(
+            "RGB", (COLS * img_size[0], ROWS * img_size[1]), (255, 255, 255)
+        )
+        print(f"final image size: {final_image.size}")
 
-    # save the finished image
-    if args.save_file:
-        save_name = args.save_file
-    else:
-        save_name = args.file.split(".")[0] + ".jpg"
-    final_image.save(save_name)
-    final_image.close()
-    print("Image completed!")
+        # paste individual JPEGs to final image
+        print("Stitching images together...")
+        for ii in range(ROWS):
+            for jj in range(COLS):
+                img_num = (
+                    jj + (ii * COLS)
+                )  # get the image number to be read from this folder (non-zero index)
+                sys.stdout.write(f"Progress: {img_num}/{len(imgs)} \r")
+                with managed_image(imgs[img_num]) as curr_image:
+                    curr_image = curr_image.crop((LEFT, UPPER, LOWER, RIGHT))
+                    final_image.paste(curr_image, (jj * img_size[0], ii * img_size[1]))
+                sys.stdout.flush()
 
-    # delete temporary files
-    if not args.save_each_jpeg:
-        print("Deleting temporary JPEGs...")
-        for img in imgs:
-            try:
-                os.remove(img)
-            except OSError as e:
-                print(f"Warning: Could not delete {img}: {e}")
+        # save the finished image
+        if args.save_file:
+            save_name = args.save_file
+        else:
+            save_name = args.file.split(".")[0] + ".jpg"
+        final_image.save(save_name)
+        final_image.close()
+        print("Image completed!")
 
 if __name__ == "__main__":
     main()
