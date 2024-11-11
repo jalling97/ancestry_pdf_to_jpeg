@@ -1,0 +1,13 @@
+[project]
+name = "ancestry_pdf_to_jpeg"
+version = "0.1.0"
+description = "Turn a multi-page Ancestry family tree PDF into a single JPEG for easier viewing and printing."
+requires-python = ">=3.11.6"
+dependencies = [
+    "pdf2image==1.16.3",
+    "Pillow==10.1.0",
+]
+
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
