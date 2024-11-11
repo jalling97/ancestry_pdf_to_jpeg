@@ -18,7 +18,7 @@ def main():
 
     # argument parsing
     parser = argparse.ArgumentParser(
-        prog="jpg_join",
+        prog="ancestry_pdf_to_jpeg",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="Combine PDF pages into a single JPEG. \n \nNOTE: it is highly recommended to print your tree from Ancestry with NO BORDERS",
     )
