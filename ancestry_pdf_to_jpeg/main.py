@@ -137,7 +137,10 @@ def main():
     if not args.save_each_jpeg:
         print("Deleting temporary JPEGs...")
         for img in imgs:
-            os.remove(img)
+            try:
+                os.remove(img)
+            except OSError as e:
+                print(f"Warning: Could not delete {img}: {e}")
 
 if __name__ == "__main__":
     main()
